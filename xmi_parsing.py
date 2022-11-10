@@ -23,14 +23,7 @@ def ClassFactory(name, arg_names, BaseClass=BaseClass):
     return new_class
 
 
-def _classes(packaged_elements):
-    # Classes
-    classes = [el for el in packaged_elements if el.getAttribute("xmi:type") == "uml:Class"]
-
-    class_names = [f_s(_class.getAttribute("name")) for _class in classes]
-    print("==== All class names ====")
-    print(class_names)
-    
+def get_attributes(classes):
     attributes_class_1 = classes[1].getElementsByTagName("ownedAttribute")
     print("==== Attributes of a second class ====")
     print(attributes_class_1)
@@ -40,7 +33,45 @@ def _classes(packaged_elements):
     print(attributes_class_1_names)
 
 
-def _enumerations(packaged_elements):
+def get_classes():
+    # Classes
+    classes = [el for el in packaged_elements if el.getAttribute("xmi:type") == "uml:Class"]
+    
+    br_tables = [{
+        "name": f_s(el.getAttribute("name")),
+        "data": [["Primary Key"]],
+        "first_row_header": True
+    } for el in classes]
+    
+    return br_tables
+
+    _classes = [{
+        "id": el.getAttribute("xmi:id"),
+        "name": f_s(el.getAttribute("name")),
+        "visibility": el.getAttribute("visibility"),
+        "is_abstract": bool(el.getAttribute("isAbstract")),
+        "is_final_specialization": bool(el.getAttribute("isFinalSpecialization")),
+        "is_leaf": bool(el.getAttribute("isLeaf")),
+        "is_active": bool(el.getAttribute("isActive")),
+    } for el in classes]
+    # print("==== _CLASSES ====")
+    # print(_classes)
+    
+    
+    # print("==== TABLES ====")
+    # print(br_tables)
+    
+    # Get any class value you want ex. "name"
+    class_names = [c["name"] for c in _classes]
+    # print("==== All class names ====")
+    # print(class_names)
+    
+    # get_attributes(classes)
+    
+    return br_tables
+
+
+def get_enumerations():
     # Enumerations
     enumerations = [el for el in packaged_elements if el.getAttribute("xmi:type") == "uml:Enumeration"]
     
@@ -57,14 +88,17 @@ def _enumerations(packaged_elements):
     print(literals_enumeration_1_names)
 
 
-def _data_types(packaged_elements):
+def get_data_types():
     # Data Types
-    data_types = [el for el in packaged_elements if el.getAttribute("xmi:type") == "uml:DataType"]
+    __data_types__ = [el for el in packaged_elements if el.getAttribute("xmi:type") == "uml:DataType"]
     
-    data_type_names = [f_s(_data_type.getAttribute("name")) for _data_type in data_types]
-    print("==== All data type names ====")
-    print(data_type_names)
-    
+    data_types = [{
+        "name" : _data_type.getAttribute("name"),
+        "id":  _data_type.getAttribute("xmi:id")
+        } for _data_type in __data_types__]
+    print("==== All data types ====")
+    print(data_types)
+
 
 def main_et():
     tree = ET.parse('models/online_shopping_model.xmi')
@@ -75,24 +109,25 @@ def main_et():
         print(child.tag, child.attrib)
 
 
+doc = xml.dom.minidom.parse("models/online_shopping_model.xmi")
+
+# print(doc.nodeName)
+# print(doc.firstChild.tagName)
+
+xmi = doc.firstChild
+# print("xmi", xmi)
+
+model = xmi.getElementsByTagName("uml:Model")[0]
+# print("model", model)
+
+packaged_elements = model.getElementsByTagName("packagedElement")
+# print(f"{packaged_elements.length} packaged elements:")
+
 def main():
-    doc = xml.dom.minidom.parse("models/online_shopping_model.xmi")
-    
-    # print(doc.nodeName)
-    # print(doc.firstChild.tagName)
-
-    xmi = doc.firstChild
-    print("xmi", xmi)
-
-    model = xmi.getElementsByTagName("uml:Model")[0]
-    print("model", model)
-    
-    packaged_elements = model.getElementsByTagName("packagedElement")
-    print(f"{packaged_elements.length} packaged elements:")
-    
-    _classes(packaged_elements)
-    _enumerations(packaged_elements)
-    _data_types(packaged_elements)
+    pass
+    # get_classes(packaged_elements)
+    # get_enumerations(packaged_elements)
+    # get_data_types(packaged_elements)
 
 
 if __name__ == '__main__':
