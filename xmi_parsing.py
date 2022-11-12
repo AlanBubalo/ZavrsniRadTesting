@@ -39,7 +39,7 @@ def get_classes():
     
     br_tables = [{
         "name": f_s(el.getAttribute("name")),
-        "data": [["Primary Key"]],
+        "data": [["/"]], # Empty table with a primary key named "/"
         "first_row_header": True
     } for el in classes]
     
@@ -67,26 +67,27 @@ def get_classes():
     # print(class_names)
     
     # get_attributes(classes)
-    
-    return br_tables
 
 
 def get_enumerations():
     # Enumerations
     enumerations = [el for el in packaged_elements if el.getAttribute("xmi:type") == "uml:Enumeration"]
     
-    enumerations_names = [f_s(_enumerator.getAttribute("name")) for _enumerator in enumerations]
-    print("==== All enumeration names ====")
-    print(enumerations_names)
+    enumerations_names = [enumeration.getAttribute("name") for enumeration in enumerations]
+    # print("==== All enumeration ====")
+    # print(enumerations_names)
     
-    literals_enumeration_1 = enumerations[1].getElementsByTagName("ownedLiteral")
-    print("==== Literals of a second enumerator ====")
-    print(literals_enumeration_1)
+    all_literals = [enumeration.getElementsByTagName("ownedLiteral") for enumeration in enumerations]
+    # print("==== Literals elements of all enumerations ====")
+    # print(all_literals)
     
-    literals_enumeration_1_names = [literal_name.getAttribute("name") for literal_name in literals_enumeration_1]
-    print("==== Literal names of a second class ==== ")
-    print(literals_enumeration_1_names)
+    en_literals = {name: {lit.getAttribute("name")
+                          for lit in literals}
+                   for name, literals in zip(enumerations_names, all_literals)}
+    # print("==== Enumerations with their literals ==== ")
+    # print(en_literals)
 
+    return en_literals
 
 def get_data_types():
     # Data Types
@@ -124,10 +125,10 @@ packaged_elements = model.getElementsByTagName("packagedElement")
 # print(f"{packaged_elements.length} packaged elements:")
 
 def main():
+    # get_classes()
+    get_enumerations()
+    # get_data_types()
     pass
-    # get_classes(packaged_elements)
-    # get_enumerations(packaged_elements)
-    # get_data_types(packaged_elements)
 
 
 if __name__ == '__main__':
