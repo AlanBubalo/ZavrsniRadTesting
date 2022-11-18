@@ -4,8 +4,10 @@ import xmi_parsing
 
 client = BaserowClient(EMAIL, PASSWORD)
 
-br_tables = xmi_parsing.get_classes()
-print(f"Baserow Tables: {br_tables}")
+tables = xmi_parsing.get_classes()
+print(f"Baserow Tables: {tables}")
+
+full_tables = xmi_parsing.get_full_tables()
 
 
 def find(table: object, keys: list, values: list):
@@ -52,9 +54,17 @@ print(f"Database ID: {database['id']}")
 
 
 """ CREATE TABLES WITH ONLY PRIMARY KEY """
-
-for table in br_tables:
+for table in tables:
     table_response = client.create_database_table(database['id'], table)
     new_table = table_response.json()
     print(f"Table ID: {new_table['id']}")
     print(f"Created table {new_table['name']} with a primary key")
+
+    """ CREATING FIELDS FOR EACH TABLE """
+    fields = full_tables[new_table["name"]]
+    
+    for field in fields:
+        field_response = client.create_database_table_field(new_table["id"], field)
+        new_field = field_response.json()
+        print(f"Created new field {new_field['id']} called {new_field['name']}")
+        
