@@ -1,26 +1,86 @@
 import xml.dom.minidom
-import xml.etree.ElementTree as ET
 from collections import defaultdict
 
 f_s = lambda x: x.replace("%20", " ")
 
-class BaseClass(object):
-    def __init__(self, class_type):
-        self._type = class_type
+doc = xml.dom.minidom.parse("models/online_shopping_model.xmi")
+xmi = doc.firstChild
+model = xmi.getElementsByTagName("uml:Model")[0]
+packaged_elements = model.getElementsByTagName("packagedElement")
+
+baserow_id = {}
+"""
+baserow_id = {
+    "Web User": 115328,
+    "Customer": 115329,
+    "Account": 115330,
+    "Payment": 115331,
+    "Order": 115332,
+    "Shopping Cart": 115333,
+    "Line Item": 115334,
+    "Product": 115335
+}
+"""
+
+def get_classes(for_baserow=True):
+    # Classes
+    classes = [el for el in packaged_elements if el.getAttribute("xmi:type") == "uml:Class"]
+    
+    br_tables = [{
+        "name": f_s(el.getAttribute("name")),
+        "data": [["/"]], # Empty table with a primary key named "/"
+        "first_row_header": True
+    } for el in classes]
+    
+    return br_tables if for_baserow else classes
 
 
-def ClassFactory(name, arg_names, BaseClass=BaseClass):
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            # here, the arg_names variable is the one passed to the
-            # ClassFactory call
-            if key not in arg_names:
-                raise TypeError("Argument %s not valid for %s" 
-                    % (key, self.__class__.__name__))
-            setattr(self, key, value)
-        BaseClass.__init__(self, name[:-len("Class")])
-    new_class = type(name, (BaseClass,),{"__init__": __init__})
-    return new_class
+def get_associations(classes):
+    ll = {}
+    for _class in classes:
+        members_class = _class.getElementsByTagName("ownedMember")
+        # print("==== Members of a single class ====")
+        # print(members_class)
+        # l_assoc = [member for member in members_class if member.getAttribute("xmi:type") == "uml:Association"]
+        
+        owned_ends = [member.getElementsByTagName("ownedEnd") for member in members_class]
+        # print(owned_ends)
+        
+        l = []
+        for pair in owned_ends:
+            ends = [{
+                "name": curr.getAttribute("name"),
+                # "type": "association",
+                "class_name": next(f_s(__class.getAttribute("name"))
+                                    for __class in classes
+                                    if __class.getAttribute("xmi:id") == curr.getAttribute("type")),
+                # "aggregation": curr.getAttribute("aggregation"),
+                # "lower_value": curr.getElementsByTagName("lowerValue")[0].getAttribute("value"),
+                # "upper_value": curr.getElementsByTagName("upperValue")[0].getAttribute("value")
+            } for curr in pair]
+            # print(f"{ends[0]} - {ends[1]}")
+            l.append(ends)
+
+        ll[f_s(_class.getAttribute("name"))] = [end[1] for end in l]
+    return ll
+
+
+def setup_baserow_ids(names_ids):
+    baserow_id = dict(names_ids)
+
+
+def get_full_associations(table_name):
+    classes = get_classes(for_baserow=False)
+    assoc_class = get_associations(classes)
+        
+    associations = assoc_class[table_name]
+
+    return [{
+            'name': assoc['name'] if assoc['name'] else assoc['class_name'],
+            "type": "link_row",
+            "link_table_id": baserow_id[assoc['class_name']],
+            "has_related_field": True,
+    } for assoc in associations]
 
 
 def get_attribute_names(classes, data_types):
@@ -45,21 +105,12 @@ def get_attribute_names(classes, data_types):
             # print(attributes_name_type)
         
             l_atr.append(attributes_name_type)
+
+        # l_atr.extend(get_associations(_class))
+        # print("================================")
+        # print(l_atr)
         list_attributes.append(l_atr)
     return list_attributes
-
-
-def get_classes(for_br=True):
-    # Classes
-    classes = [el for el in packaged_elements if el.getAttribute("xmi:type") == "uml:Class"]
-    
-    br_tables = [{
-        "name": f_s(el.getAttribute("name")),
-        "data": [["/"]], # Empty table with a primary key named "/"
-        "first_row_header": True
-    } for el in classes]
-    
-    return br_tables if for_br else classes
 
 
 def get_enumerations():
@@ -93,13 +144,29 @@ def get_data_types(enums):
     
     return data_types
 
+
 def get_attributes_with_data_types(class_attributes, enums):
-    print(class_attributes)
+    # print(class_attributes)
     for class_name, attributes in class_attributes.items():
         upgraded_attributes = []
+        upgraded_associations = []
         
         for attr in attributes:
+            print(attr)
             dict_type = defaultdict(lambda x: None)
+            """
+            # Handling Association, that is, Link Row
+            if (type(attr) == list):
+                # Attribute is an association
+                dict_type["name"] = attr[0]["name"] if attr[0]["name"] else attr[0]["class_name"]
+                dict_type["type"] = "link_row"
+                dict_type["link_row_table_id"] = ""
+                dict_type["has_related_field"] = False
+                
+                upgraded_associations.append(dict(dict_type))
+                continue
+            """  
+                
             dict_type["name"] = attr["name"].title().replace("_", " ")
             lower_name = attr["type"].lower()
             
@@ -188,8 +255,8 @@ def get_attributes_with_data_types(class_attributes, enums):
             # print(dict(dict_type))
             upgraded_attributes.append(dict(dict_type))
         
-        class_attributes[class_name] = upgraded_attributes
-            
+        class_attributes[class_name] = upgraded_attributes + upgraded_associations
+        
     return class_attributes
 
 
@@ -200,8 +267,12 @@ def add_class_names_in_attributes(c, atr):
     }
 
 
+def sort_class_names_in_associations(class_assoc_name):
+    return sorted(class_assoc_name, key=class_assoc_name.get)
+
+
 def get_full_tables():
-    classes = get_classes(for_br=False)
+    classes = get_classes(for_baserow=False)
     enums = get_enumerations()
     data_types = get_data_types(enums)
     attribute_names = get_attribute_names(classes, data_types)
@@ -220,31 +291,34 @@ def main_et():
         print(child.tag, child.attrib)
 
 
-doc = xml.dom.minidom.parse("models/online_shopping_model.xmi")
-# print(doc.firstChild.tagName)
-xmi = doc.firstChild
-# print("xmi", xmi)
-model = xmi.getElementsByTagName("uml:Model")[0]
-# print("model", model)
-packaged_elements = model.getElementsByTagName("packagedElement")
-# print(f"{packaged_elements.length} packaged elements:")
-
-
 if __name__ == '__main__':
-    classes = get_classes(for_br=False)
+    classes = get_classes(for_baserow=False)
     tables = get_classes()
+    assoc = get_associations(classes)
+    for i, aso in assoc.items():
+        print(i, aso)
+    final_assoc = get_full_associations("Web User")
+    for i in final_assoc:
+        print(i)
     # print(classes)
     # print(tables)
-    enums = get_enumerations()
+    # enums = get_enumerations()
     # print(enums)
-    data_types = get_data_types(enums)
+    # data_types = get_data_types(enums)
     # print(data_types)
-    attribute_names = get_attribute_names(classes, data_types)
+    # attribute_names = get_attribute_names(classes, data_types)
     # print(attribute_names)
-    class_attributes_names = add_class_names_in_attributes(classes, attribute_names)
+    # class_attributes_names = add_class_names_in_attributes(classes, attribute_names)
     # print(class_attributes_names)
-    table_fields = get_attributes_with_data_types(class_attributes_names, enums)
+    # table_fields = get_attributes_with_data_types(class_attributes_names, enums)
+    # for class_name, fields in table_fields.items():
+    #     print(class_name, fields)
+    """
     
     table_fields_one_fun = get_full_tables()
     for class_name, fields in table_fields_one_fun.items():
-         print(class_name, fields)
+        print(class_name, fields)
+    """
+    
+    # associations = get_associations(classes)
+    # print(associations)

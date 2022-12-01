@@ -140,8 +140,8 @@ class BaserowClient:
         return requests.delete(BR_URL + f"database/tables/{table_id}/", headers=self.__get_headers__)
     
     
-    def list_database_tables(self, headers: object, database_id: int):
-        return requests.get(BR_URL + f"database/tables/database/{database_id}/", headers=headers)    
+    def list_database_tables(self, database_id: int):
+        return requests.get(BR_URL + f"database/tables/database/{database_id}/", headers=self.__get_headers__)    
     
     
     def create_database_table(self, database_id: int, table: object):
