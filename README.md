@@ -1,4 +1,4 @@
-# Python UML Engine
+# Database initialization from uML Class Diagram to Baserow
 
 ## Steps
 

@@ -83,7 +83,7 @@ class BaserowClient:
         return requests.post(BR_URL + "groups/", headers=self.__post_patch_headers__, json={"name": name})
     
     
-    """   
+    """
     def update_group(self, group_id: int, name: str):
         return requests.patch(BR_URL + f"groups/{group_id}/", headers=self.__post_patch_headers__, json={"name": name})
     
@@ -107,13 +107,14 @@ class BaserowClient:
     def list_group_users(self, group_id: int):
         return requests.get(BR_URL + f"groups/users/group/{group_id}/", headers=self.__get_headers__)
     
-    """
-    def list_all_applications(self):
-        return requests.get(BR_URL + f"applications/", headers=self.__get_headers__)
-    
     
     def get_application(self, application_id: int):
         return requests.get(BR_URL + f"applications/{application_id}/", headers=self.__get_headers__)
+    """
+    
+    
+    def list_all_applications(self):
+        return requests.get(BR_URL + f"applications/", headers=self.__get_headers__)
     
     
     def create_application(self, group_id: int, name: str, type: str):
@@ -128,6 +129,7 @@ class BaserowClient:
         return requests.get(BR_URL + f"applications/group/{group_id}/", headers=self.__get_headers__)
     
     
+    """
     def get_database_table(self, table_id: int):
         return requests.get(BR_URL + f"database/tables/{table_id}/", headers=self.__get_headers__)
     
@@ -142,12 +144,13 @@ class BaserowClient:
     
     def list_database_tables(self, database_id: int):
         return requests.get(BR_URL + f"database/tables/database/{database_id}/", headers=self.__get_headers__)    
-    
+    """
     
     def create_database_table(self, database_id: int, table: object):
         return requests.post(BR_URL + f"database/tables/database/{database_id}/", headers=self.__post_patch_headers__, json=table)
     
     
+    """
     def get_database_table_field(self, field_id: int):
         return requests.get(BR_URL + f"database/fields/{field_id}/", headers=self.__get_headers__)
     
@@ -166,12 +169,13 @@ class BaserowClient:
     
     def list_database_table_fields(self, table_id: int):
         return requests.get(BR_URL + f"database/fields/table/{table_id}/", headers=self.__get_headers__)
-    
+    """
     
     def create_database_table_field(self, table_id: int, field: object):
         return requests.post(BR_URL + f"database/fields/table/{table_id}/", headers=self.__post_patch_headers__, json=field)
     
     
+    """
     def type_formula_field(self, table_id: int, formula: str, name: str):
         formula_dict = {
             "formula": formula,
@@ -182,3 +186,5 @@ class BaserowClient:
 
     def create_row(self, table_id: int, row: object, user_field_names=True):
         return requests.post(BR_URL + f"database/rows/table/{table_id}/?user_field_names={user_field_names}", headers=self.__post_patch_headers__, json=row)
+    """
+    
